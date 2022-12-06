@@ -1,17 +1,25 @@
 from rest_framework import serializers
 from .models import Student
+from django.contrib.auth.models import User
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=User
+        fields=['username','password']
+
+
+
+
 
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = ['id', 'name','roll','city']
     
-    
+ 
     
     def create(self, validated_data):
-        """
-        Create and return a new `Snippet` instance, given the validated data.
-        """
         return Student.objects.create(**validated_data)
 
     def update(self, instance, validated_data):

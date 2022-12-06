@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .models import Student
-from .serializers import StudentSerializer
+from .serializers import StudentSerializer,UserSerializer
 from rest_framework.renderers import JSONRenderer
 # Create your views here. 
 from django.views.decorators.csrf import csrf_exempt
@@ -15,9 +15,6 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.pagination import CursorPagination
-
-
-
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -61,8 +58,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 # offset pagination
 
 # class stupagination1(LimitOffsetPagination):
-#    pass
-#-------------------------------------------------------------
+#     page_size=3 
+# -------------------------------------------------------------
 
 # cursor  pagination
 
@@ -71,13 +68,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 # #    ordering='name'
 
 
-class StudentList(ListAPIView):
-    # queryset=Student.objects.filter(city='ahmedabad')
-    queryset=Student.objects.all()
-    serializer_class=StudentSerializer
-    filter_backends=[DjangoFilterBackend]
-    filterset_fields=['name','city']
-    # filter_backends=[SearchFilter]
+# class StudentList(ListAPIView):
+#     # queryset=Student.objects.filter(city='ahmedabad')
+#     queryset=Student.objects.all()
+#     serializer_class=StudentSerializer
+#     filter_backends=[DjangoFilterBackend]
+#     filterset_fields=['name','city']
+#     # filter_backends=[SearchFilter]
     # search_fields=['city','name']
     # # search_fields=['^name']
     # filter_backends=[OrderingFilter]
@@ -91,8 +88,51 @@ class StudentList(ListAPIView):
     # pagination_class=stupagination2
    
 
-    
+# from rest_framework import viewsets    
+# from rest_framework.authentication import SessionAuthentication
+# from rest_framework.permissions import IsAuthenticated
 
+# class StudentAuth(viewsets.ModelViewSet):
+#     queryset=Student.objects.all()
+#     serializer_class=StudentSerializer
+#     authentication_classes=[SessionAuthentication]
+#     permission_classes=[IsAuthenticated]
+from .serializers import User   
+from rest_framework.authtoken.models import Token
+class regiuser(APIView):
+    
+    def post(self,request):
+        serializer=UserSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+             return Response({'status':status.HTTP_400_BAD_REQUEST,'errors':serializer.errors,'message':'somthing went wrong'})
+        serializer.save()
+        user=User.objects.get(username=serializer.data['username'])
+        print("_________________________________________________________________",user)
+        token_obj , _ = Token.objects.get_or_create(user=user)
+
+        
+        
+        
+        return Response({'data':serializer.data,'token' :str(token_obj),'status':status.HTTP_200_OK})
+
+
+from rest_framework.authtoken.views import ObtainAuthToken
+
+class loginuser(ObtainAuthToken):
+    def post(self,request):
+        serializer=self.serializer_class(data=request.data)
+        
+        if serializer.is_valid():
+            user=serializer.validated_data['user']
+            token_obj ,created = Token.objects.get_or_create(user=user)
+            return Response({'token':str(token_obj)})
+        return Response(
+            {
+                'error':'user not found'
+            }
+        )
+        
 
 
 
@@ -129,8 +169,13 @@ class StudentApi(APIView):
     
     
     def put(self,request,pk,format=None):
-        id=pk
-        stu=Student.objects.get(pk=id)
+        try:
+            id=pk
+            stu=Student.objects.get(pk=id)
+        except Student.DoesNotExist:
+            msg={"msg":"not found"}
+            return Response(msg,status=status.HTTP_404_NOT_FOUND)
+            
         serializer=StudentSerializer(stu,data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -138,8 +183,12 @@ class StudentApi(APIView):
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
     def patch(self,request,pk,format=None):
-        id=pk
-        stu=Student.objects.get(pk=id)
+        try:
+            id=pk
+            stu=Student.objects.get(pk=id)
+        except Student.DoesNotExist:
+            msg={"msg":"not found"}
+            return Response(msg,status=status.HTTP_404_NOT_FOUND)
         serializer=StudentSerializer(stu,data=request.data,partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -147,8 +196,12 @@ class StudentApi(APIView):
         return Response(serializer.errors)
    
     def delete(self,request,pk,format=None):
-        id=pk
-        stu=Student.objects.get(pk=id)
+        try:
+            id=pk
+            stu=Student.objects.get(pk=id)
+        except Student.DoesNotExist:
+            msg={"msg":"not found"}
+            return Response(msg,status=status.HTTP_404_NOT_FOUND)
         stu.delete()
         return Response({'msg':'data deleted'})
 
