@@ -109,7 +109,7 @@ class regiuser(APIView):
         serializer.save()
         user=User.objects.get(username=serializer.data['username'])
         print("_________________________________________________________________",user)
-        token_obj , _ = Token.objects.get_or_create(user=user)
+        token_obj = Token.objects.get_or_create(user=user)
 
         
         
@@ -125,7 +125,7 @@ class loginuser(ObtainAuthToken):
         
         if serializer.is_valid():
             user=serializer.validated_data['user']
-            token_obj ,created = Token.objects.get_or_create(user=user)
+            token_obj = Token.objects.get_or_create(user=user)
             return Response({'token':str(token_obj)})
         return Response(
             {
@@ -133,10 +133,15 @@ class loginuser(ObtainAuthToken):
             }
         )
         
-
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 
 class StudentApi(APIView):
+    
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def get(self,request,pk=None,format=None):
         try:
             id=pk
